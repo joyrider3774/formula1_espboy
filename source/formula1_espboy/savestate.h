@@ -2,7 +2,8 @@
 #define SAVESTATE_H
 
 #include <stdint.h>
-void initSaveState(void);
+void saveSaveState(void);
+void loadSaveState(void);
 void setHiScore(int value);
 uint32_t getHiScore(void);
 

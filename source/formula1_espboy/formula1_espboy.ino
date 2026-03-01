@@ -40,12 +40,13 @@ void printDebugCpuRamLoad()
 
 void setup()
 {   
-    myESPboy.begin("Formula 1 v1.0");
+    myESPboy.begin("Formula 1 v1.1");
     fb = createFramebuffer(myESPboy.tft.width(), myESPboy.tft.height(), true, false);
     initSound();
     initMusic();
     setSoundOn(true);
     setMusicOn(true);
+    loadSaveState();
     gameState = gsInitIntro;
     currentTime = micros();
     lastTime = 0;

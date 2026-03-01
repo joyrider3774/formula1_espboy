@@ -207,6 +207,7 @@ void initGameOver(void)
 {
 	Teller = 0;
 	Delay = 15;
+	saveSaveState();
 }
 
 void gameOver(void)

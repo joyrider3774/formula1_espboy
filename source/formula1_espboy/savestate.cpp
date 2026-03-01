@@ -1,193 +1,70 @@
+#include <EEPROM.h>
 #include <string.h>
 #include <stdint.h>
 #include "commonvars.h"
 
+#define SAVE_MAGIC 0xDBDB
 
-char header[16];
-unsigned int check;
-unsigned int saveTime;
-int hiScore;
-int valid;
+#pragma pack(push, 1)
+struct SaveData {
+    uint16_t magic;  // always first
+    int hiScore;
+    uint8_t crc;
+};
+#pragma pack(pop)
+typedef struct SaveData SaveData;
+
+SaveData saveData;
+
+uint8_t calcCRC(void *data, size_t len) {
+  uint8_t crc = 0;
+  uint8_t *ptr = (uint8_t *)data;
+  for (size_t i = 0; i < len; i++) {
+    crc ^= ptr[i];
+    for (byte j = 0; j < 8; j++) {
+      if (crc & 0x80)
+        crc = (crc << 1) ^ 0x07;
+      else
+        crc <<= 1;
+    }
+  }
+  return crc;
+}
 
 void loadSaveState(void)
 {
-// {
-//     SDFile* saveStateFile = pd->file->open("savestate.srm", kFileReadData);
-//     //does not exist
-//     if (saveStateFile == NULL)
-//         return;
-
-//     int ret = pd->file->read(saveStateFile, &saveTime, sizeof(saveTime));
-//     if (ret == -1)
-//     {
-//         valid = 0;
-//         pd->system->error("Error reading header from savesate file!");
-//         pd->system->logToConsole(pd->file->geterr());
-//         return;
-//     }
-//     encrypt(0, 0, &saveTime, sizeof(saveTime), false);
-
-//     ret = pd->file->read(saveStateFile, header, sizeof(header));
-//     if (ret == -1)
-//     {
-//         valid = 0;
-//         pd->system->error("Error reading header from savesate file!");
-//         pd->system->logToConsole(pd->file->geterr());
-//         return;
-//     }
-//     unsigned int pos = encrypt(0, saveTime, header, sizeof(header), false);
-
-//     ret = pd->file->read(saveStateFile, &check, sizeof(check));
-//     if (ret == -1)
-//     {
-//         valid = 0;
-//         pd->system->error("Error reading hiscore from savesate file!");
-//         pd->system->logToConsole(pd->file->geterr());
-//         return;
-//     }
-//     pos = encrypt(pos, saveTime, &check, sizeof(check), false);
-
-//     ret = pd->file->read(saveStateFile, &hiScore, sizeof(hiScore));
-//     if (ret == -1)
-//     {
-//         valid = 0;
-//         pd->system->error("Error reading hiscore from savesate file!");
-//         pd->system->logToConsole(pd->file->geterr());
-//         return;
-//     }
-//     pos = encrypt(pos, saveTime, &hiScore, sizeof(hiScore), false);
-
-//     ret = pd->file->close(saveStateFile);
-//     if (ret == -1)
-//     {
-//         valid = 0;
-//         pd->system->error("Error closing savesate file!");
-//         pd->system->logToConsole(pd->file->geterr());
-//         return;
-//     }
-
-
+    EEPROM.begin(sizeof(SaveData));
+    EEPROM.get(0, saveData);
+    //needs to be -uint8t size because of crc not included in calculation
+    uint8_t crc = calcCRC(&saveData, sizeof(SaveData) - sizeof(uint8_t));
+    if (saveData.magic != SAVE_MAGIC || saveData.crc != crc) 
+    {
+        Serial.println("EEPROM invalid, loading defaults");
+        memset(&saveData, 0, sizeof(SaveData));
+        saveData.magic = SAVE_MAGIC;
+    }
+    else
+    {
+        Serial.println("EEPROM valid, loaded scores");
+    }
 }
 
 void saveSaveState(void)
 {
-   
-//     valid = 1;
-//     check = (hiScore % 97);
-
-//     SDFile* saveStateFile = pd->file->open("savestate.srm", kFileWrite);
-//     if (saveStateFile == NULL)
-//     {
-//         pd->system->error("Couldn�t open savestate file for writing!");
-//         pd->system->logToConsole(pd->file->geterr());
-//         return;
-//     }
-    
-//     saveTime = pd->system->getCurrentTimeMilliseconds();
-
-//     encrypt(0, 0, &saveTime, sizeof(saveTime), true);
-//     int ret = pd->file->write(saveStateFile, &saveTime, sizeof(saveTime));
-//     if (ret == -1)
-//     {
-//         encrypt(0, 0, &saveTime, sizeof(saveTime), true);
-//         pd->system->error("Error writing header to savesate file!");
-//         pd->system->logToConsole(pd->file->geterr());
-//         return;
-//     }
-//     encrypt(0, 0, &saveTime, sizeof(saveTime), true);
-
-//     unsigned int pos = encrypt(0, saveTime, header, sizeof(header), true);
-//     ret = pd->file->write(saveStateFile, header, sizeof(header));
-//     if (ret == -1)
-//     {
-
-//         pos = encrypt(0, saveTime, header, sizeof(header), false);
-//         pd->system->error("Error writing header to savesate file!");
-//         pd->system->logToConsole(pd->file->geterr());
-//         return;
-//     }
-//     pos = encrypt(0, saveTime, header, sizeof(header), false);
-
-//     pos = encrypt(pos, saveTime, &check, sizeof(check), true);
-//     ret = pd->file->write(saveStateFile, &check, sizeof(check));
-//     if (ret == -1)
-//     {
-
-//         pos = encrypt(pos, saveTime, &check, sizeof(check), false);
-//         pd->system->error("Error writing header to savesate file!");
-//         pd->system->logToConsole(pd->file->geterr());
-//         return;
-//     }
-//     pos = encrypt(pos, saveTime, &check, sizeof(check), false);
-
-//     pos = encrypt(pos, saveTime, &hiScore, sizeof(hiScore), true);
-//     ret = pd->file->write(saveStateFile, &hiScore, sizeof(hiScore));
-//     if (ret == -1)
-//     {
-//         pos = encrypt(pos, saveTime, &hiScore, sizeof(hiScore), false);
-//         pd->system->error("Error writing hiScore to savesate file!");
-//         pd->system->logToConsole(pd->file->geterr());
-//         return;
-//     }
-//     pos = encrypt(pos, saveTime, &hiScore, sizeof(hiScore), false);
-
-//     //crashes the simulator ???
-// #ifndef _WIN32
-//     ret = pd->file->flush(saveStateFile);
-//     if (ret == -1)
-//     {
-//         pd->system->error("Error flushing savesate file!");
-//         pd->system->logToConsole(pd->file->geterr());
-//         return;
-//     }
-// #endif
-
-//     ret = pd->file->close(saveStateFile);
-//     if (ret == -1)
-//     {
-//         pd->system->error("Error closing savesate file!");
-//         pd->system->logToConsole(pd->file->geterr());
-//         return;
-//     }
-}
-
-void validateSaveState(void)
-{
-    // if ((hiScore % 97) != check)
-    // {
-    //     hiScore = 0;
-    //     valid = 0;
-    // }
-
-    // if ((strcmp(header, "formula1_001") != 0) || !valid)
-    // {
-    //     valid = 0;        
-    //     strcpy(header, "formula1_001");
-    // }
-
-    // if (!valid)
-    // {
-    //     saveSaveState();
-    // }
-}
-
-void initSaveState(void)
-{
-    valid = 1;
-    hiScore = 0;
-    check = 1;
-    loadSaveState();
-    validateSaveState();
+    saveData.crc = calcCRC(&saveData, sizeof(SaveData) - sizeof(uint8_t));
+    EEPROM.begin(sizeof(SaveData));
+    EEPROM.put(0, saveData);
+    bool ok = EEPROM.commit();
+    Serial.printf("Save %s, crc: 0x%02X\n", ok ? "OK" : "FAILED", saveData.crc);
 }
 
 uint32_t getHiScore(void)
 {
-    return hiScore;
+    return saveData.hiScore;
 }
 
 void setHiScore(int value)
 {
-    hiScore = value;
-    saveSaveState();
+    saveData.hiScore = value;
 }
 
